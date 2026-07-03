@@ -7,7 +7,7 @@
           {
             "type": "command",
             "command": "python3 \"$PLUGIN_ROOT/hooks/blocking_exec.py\"",
-            "statusMessage": "Running codex-block command"
+            "statusMessage": "Running Bash command to completion"
           }
         ]
       }

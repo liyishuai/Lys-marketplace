@@ -1,7 +1,7 @@
 {
   "name": "codex-blocking-exec",
   "version": "0.1.0",
-  "description": "A Codex hook plugin that runs explicitly marked long commands inside PreToolUse and returns one final result.",
+  "description": "A Codex hook plugin that runs Bash commands inside PreToolUse and returns one final result.",
   "author": {
     "name": "liyishuai",
     "url": "https://github.com/liyishuai"
@@ -15,15 +15,15 @@
   ],
   "interface": {
     "displayName": "Codex Blocking Exec",
-    "shortDescription": "Block inside a hook for marked long-running Bash commands.",
-    "longDescription": "Codex Blocking Exec ships a PreToolUse hook that intercepts commands prefixed with codex-block --, runs the real command synchronously inside the hook, captures a log, and rewrites the Bash tool call to report the final exit code and output tail.",
+    "shortDescription": "Block inside a hook for Bash commands.",
+    "longDescription": "Codex Blocking Exec ships a PreToolUse hook that intercepts Bash commands, runs the original command synchronously inside the hook, captures a log, and rewrites the Bash tool call to report the final exit code and output tail.",
     "developerName": "liyishuai",
     "category": "Productivity",
     "capabilities": [
       "Hooks"
     ],
     "defaultPrompt": [
-      "Run this long command with codex-block."
+      "Run this long command through the blocking hook."
     ]
   }
 }
