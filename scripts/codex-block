@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+echo "codex-block must be intercepted by the Codex Blocking Exec PreToolUse hook; refusing to run directly." >&2
+exit 88
