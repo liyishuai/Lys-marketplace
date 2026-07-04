@@ -57,24 +57,26 @@ if specific["permissionDecision"] != "allow":
 
 replacement = specific["updatedInput"]["command"]
 replacement_args = shlex.split(replacement)
-if len(replacement_args) != 5:
+if len(replacement_args) != 4:
     raise SystemExit(f"replacement has wrong arity: {replacement!r}")
-if replacement_args[:2] != ["blocking-exec-replay", "--"]:
+if replacement_args[0] != "bx":
     raise SystemExit(f"replacement is not a replay command: {replacement!r}")
-if replacement_args[2] != "printf blocking-exec; exit 7":
+if replacement_args[1] != "printf blocking-exec; exit 7":
     raise SystemExit(f"replacement does not include original command: {replacement!r}")
-if not replacement_args[3].startswith(os.environ["BLOCKING_EXEC_LOG_DIR"] + "/"):
+if not replacement_args[2].startswith(os.environ["BLOCKING_EXEC_LOG_DIR"] + "/"):
     raise SystemExit(f"replacement does not include log path: {replacement!r}")
-if replacement_args[4] != "7":
+if replacement_args[3] != "7":
     raise SystemExit(f"replacement does not include return value: {replacement!r}")
 if (
     "__blocking_exec_replay" in replacement
     or "block --" in replacement
+    or "blocking-exec-replay" in replacement
+    or " -- " in replacement
     or replacement.lstrip().startswith("cat ")
 ):
     raise SystemExit(f"replacement regressed to polluted replay: {replacement!r}")
-if not os.path.islink(os.path.join(path_dir, "blocking-exec-replay")):
-    raise SystemExit("hook did not expose blocking-exec-replay on PATH")
+if not os.path.islink(os.path.join(path_dir, "bx")):
+    raise SystemExit("hook did not expose bx on PATH")
 final = subprocess.run(
     ["bash", "-lc", replacement],
     stdout=subprocess.PIPE,
@@ -118,9 +120,9 @@ if hook_run.returncode != 0:
 result = json.loads(hook_run.stdout)
 replacement = result["hookSpecificOutput"]["updatedInput"]["command"]
 replacement_args = shlex.split(replacement)
-if len(replacement_args) != 5:
+if len(replacement_args) != 4:
     raise SystemExit(f"cwd replacement has wrong arity: {replacement!r}")
-if replacement_args[:3] != ["blocking-exec-replay", "--", "pwd"]:
+if replacement_args[:2] != ["bx", "pwd"]:
     raise SystemExit(f"cwd replacement lost replay/original command: {replacement!r}")
 final = subprocess.run(
     ["bash", "-lc", replacement],

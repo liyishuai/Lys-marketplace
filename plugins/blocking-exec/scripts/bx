@@ -9,7 +9,7 @@ from pathlib import Path
 
 def usage() -> int:
     print(
-        "usage: blocking-exec-replay -- <original-command> <log-path> <status>",
+        "usage: bx <original-command> <log-path> <status>",
         file=sys.stderr,
     )
     return 2
@@ -23,17 +23,17 @@ def read_status(value: str) -> int:
 
 
 def main() -> int:
-    if len(sys.argv) != 5 or sys.argv[1] != "--":
+    if len(sys.argv) != 4:
         return usage()
 
-    _, _, _original_command, log_arg, status_arg = sys.argv
+    _, _original_command, log_arg, status_arg = sys.argv
     log_path = Path(log_arg)
     try:
         with log_path.open("rb") as log:
             sys.stdout.buffer.write(log.read())
     except OSError as exc:
         print(
-            f"blocking-exec-replay: unable to read captured output: {exc}",
+            f"bx: unable to read captured output: {exc}",
             file=sys.stderr,
         )
         return 127

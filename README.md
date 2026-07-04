@@ -20,7 +20,7 @@ definition. Codex does not automatically trust hooks bundled by plugins.
 
 `blocking-exec` ships a `PreToolUse` hook for Bash. When Codex calls Bash,
 the hook runs the original command synchronously, writes combined stdout/stderr
-to `/tmp/blocking-exec`, and rewrites the Bash tool call to replay that
+to `/tmp/bx`, and rewrites the Bash tool call to replay that
 captured output with the command's original exit code.
 
 This is useful for long-running commands where Codex's normal command-yield loop

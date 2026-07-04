@@ -10,15 +10,15 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 import shlex
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 
-LOG_DIR = Path(os.environ.get("BLOCKING_EXEC_LOG_DIR", "/tmp/blocking-exec"))
-REPLAY_COMMAND = "blocking-exec-replay"
+LOG_DIR = Path(os.environ.get("BLOCKING_EXEC_LOG_DIR", "/tmp/bx"))
+REPLAY_COMMAND = "bx"
 
 
 def run_blocking(command: str, cwd: str | None, log_path: Path) -> int:
@@ -68,12 +68,19 @@ def replacement_command(original_command: str, log_path: Path, rc: int) -> str:
     return " ".join(
         [
             shlex.quote(replay_command()),
-            "--",
             shlex.quote(original_command),
             shlex.quote(str(log_path)),
             str(int(rc)),
         ]
     )
+
+
+def new_log_path() -> Path:
+    for _ in range(16):
+        path = LOG_DIR / secrets.token_hex(4)
+        if not path.exists():
+            return path
+    return LOG_DIR / secrets.token_hex(8)
 
 
 def command_cwd(payload: dict) -> str | None:
@@ -102,8 +109,7 @@ def main() -> int:
         return 0
 
     LOG_DIR.mkdir(parents=True, exist_ok=True)
-    job_id = f"{int(time.time())}-{os.getpid()}"
-    log_path = LOG_DIR / f"{job_id}.log"
+    log_path = new_log_path()
     rc = run_blocking(command, command_cwd(payload), log_path)
 
     print(
