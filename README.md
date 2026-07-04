@@ -17,10 +17,10 @@ gh pr checks 123 --repo owner/repo --watch --interval 60
 
 ## Install
 
-Install the tagged release from GitHub:
+Install from GitHub:
 
 ```bash
-codex plugin marketplace add liyishuai/codex-blocking-exec --ref v0.1.0
+codex plugin marketplace add liyishuai/codex-blocking-exec
 codex plugin add codex-blocking-exec@codex-blocking-exec
 ```
 

@@ -8,8 +8,7 @@
       "name": "codex-blocking-exec",
       "source": {
         "source": "url",
-        "url": "https://github.com/liyishuai/codex-blocking-exec.git",
-        "ref": "v0.1.0"
+        "url": "https://github.com/liyishuai/codex-blocking-exec.git"
       },
       "policy": {
         "installation": "AVAILABLE",
