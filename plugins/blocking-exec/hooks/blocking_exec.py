@@ -45,7 +45,7 @@ def replay_script_path() -> Path:
     return Path(__file__).resolve().parents[1] / "scripts" / REPLAY_COMMAND
 
 
-def replay_command() -> str:
+def ensure_replay_command() -> bool:
     source = replay_script_path()
     for raw_dir in os.environ.get("PATH", "").split(os.pathsep):
         if not raw_dir:
@@ -55,14 +55,17 @@ def replay_command() -> str:
         try:
             if candidate.exists() or candidate.is_symlink():
                 if candidate.resolve() == source.resolve():
-                    return REPLAY_COMMAND
-                return str(source)
+                    return True
+                if directory.is_dir() and os.access(directory, os.W_OK | os.X_OK):
+                    candidate.unlink()
+                    candidate.symlink_to(source)
+                    return True
             if directory.is_dir() and os.access(directory, os.W_OK | os.X_OK):
                 candidate.symlink_to(source)
-                return REPLAY_COMMAND
+                return True
         except OSError:
             continue
-    return str(source)
+    return False
 
 
 def display_command(command: str) -> str:
@@ -84,7 +87,7 @@ def display_command(command: str) -> str:
 def replacement_command(original_command: str, log_id: str, rc: int) -> str:
     return " ".join(
         [
-            shlex.quote(replay_command()),
+            REPLAY_COMMAND,
             str(int(rc)),
             shlex.quote(log_id),
             "--",
@@ -127,6 +130,7 @@ def main() -> int:
         return 0
 
     LOG_DIR.mkdir(parents=True, exist_ok=True)
+    ensure_replay_command()
     log_id = new_log_id()
     log_path = LOG_DIR / log_id
     rc = run_blocking(command, command_cwd(payload), log_path)

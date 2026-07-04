@@ -64,6 +64,8 @@ if len(replacement_args) != 8:
     raise SystemExit(f"replacement has wrong arity: {replacement!r}")
 if replacement_args[:2] != ["bx", "7"]:
     raise SystemExit(f"replacement is not a replay command: {replacement!r}")
+if replacement.startswith("/") or "/scripts/bx" in replacement:
+    raise SystemExit(f"replacement used an absolute replay path: {replacement!r}")
 if "/" in replacement_args[2]:
     raise SystemExit(f"replacement includes a path instead of file id: {replacement!r}")
 if replacement_args[3:] != ["--", "printf", "blocking-exec;", "exit", "7"]:
