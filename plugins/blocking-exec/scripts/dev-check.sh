@@ -15,13 +15,16 @@ python3 -m py_compile "$hook"
 BLOCKING_EXEC_LOG_DIR="$log_dir" python3 - "$hook" "$plugin_root" <<'PY'
 import json
 import os
+import shlex
 import subprocess
 import sys
 
 hook = sys.argv[1]
 plugin_root = sys.argv[2]
+path_dir = os.path.join(os.environ["BLOCKING_EXEC_LOG_DIR"], "path")
+os.makedirs(path_dir, exist_ok=True)
 test_env = os.environ.copy()
-test_env["PATH"] = f"{plugin_root}/scripts:{test_env.get('PATH', '')}"
+test_env["PATH"] = f"{path_dir}:{test_env.get('PATH', '')}"
 
 payload = {
     "session_id": "dev-check-session",
@@ -41,7 +44,7 @@ hook_run = subprocess.run(
     stderr=subprocess.PIPE,
     text=True,
     cwd=plugin_root,
-    env=os.environ.copy(),
+    env=test_env,
     check=False,
 )
 if hook_run.returncode != 0:
@@ -53,12 +56,25 @@ if specific["permissionDecision"] != "allow":
     raise SystemExit(f"unexpected hook decision: {specific!r}")
 
 replacement = specific["updatedInput"]["command"]
-if not replacement.startswith("block -- "):
-    raise SystemExit(f"replacement is not a block command: {replacement!r}")
-if "printf blocking-exec; exit 7" not in replacement:
+replacement_args = shlex.split(replacement)
+if len(replacement_args) != 5:
+    raise SystemExit(f"replacement has wrong arity: {replacement!r}")
+if replacement_args[:2] != ["blocking-exec-replay", "--"]:
+    raise SystemExit(f"replacement is not a replay command: {replacement!r}")
+if replacement_args[2] != "printf blocking-exec; exit 7":
     raise SystemExit(f"replacement does not include original command: {replacement!r}")
-if "__blocking_exec_replay" in replacement or replacement.lstrip().startswith("cat "):
+if not replacement_args[3].startswith(os.environ["BLOCKING_EXEC_LOG_DIR"] + "/"):
+    raise SystemExit(f"replacement does not include log path: {replacement!r}")
+if replacement_args[4] != "7":
+    raise SystemExit(f"replacement does not include return value: {replacement!r}")
+if (
+    "__blocking_exec_replay" in replacement
+    or "block --" in replacement
+    or replacement.lstrip().startswith("cat ")
+):
     raise SystemExit(f"replacement regressed to polluted replay: {replacement!r}")
+if not os.path.islink(os.path.join(path_dir, "blocking-exec-replay")):
+    raise SystemExit("hook did not expose blocking-exec-replay on PATH")
 final = subprocess.run(
     ["bash", "-lc", replacement],
     stdout=subprocess.PIPE,
@@ -93,7 +109,7 @@ hook_run = subprocess.run(
     stderr=subprocess.PIPE,
     text=True,
     cwd="/",
-    env=os.environ.copy(),
+    env=test_env,
     check=False,
 )
 if hook_run.returncode != 0:
@@ -101,8 +117,11 @@ if hook_run.returncode != 0:
 
 result = json.loads(hook_run.stdout)
 replacement = result["hookSpecificOutput"]["updatedInput"]["command"]
-if not replacement.startswith("block -- ") or "pwd" not in replacement:
-    raise SystemExit(f"cwd replacement lost block/original command: {replacement!r}")
+replacement_args = shlex.split(replacement)
+if len(replacement_args) != 5:
+    raise SystemExit(f"cwd replacement has wrong arity: {replacement!r}")
+if replacement_args[:3] != ["blocking-exec-replay", "--", "pwd"]:
+    raise SystemExit(f"cwd replacement lost replay/original command: {replacement!r}")
 final = subprocess.run(
     ["bash", "-lc", replacement],
     stdout=subprocess.PIPE,

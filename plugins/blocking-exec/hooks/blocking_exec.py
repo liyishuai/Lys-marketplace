@@ -18,7 +18,7 @@ from pathlib import Path
 
 
 LOG_DIR = Path(os.environ.get("BLOCKING_EXEC_LOG_DIR", "/tmp/blocking-exec"))
-JOB_DIR = LOG_DIR / "jobs"
+REPLAY_COMMAND = "blocking-exec-replay"
 
 
 def run_blocking(command: str, cwd: str | None, log_path: Path) -> int:
@@ -37,24 +37,43 @@ def run_blocking(command: str, cwd: str | None, log_path: Path) -> int:
         return proc.wait()
 
 
-def write_job(command: str, log_path: Path, rc: int) -> None:
-    JOB_DIR.mkdir(parents=True, exist_ok=True)
-    job_path = JOB_DIR / f"{log_path.stem}.json"
-    job_path.write_text(
-        json.dumps(
-            {
-                "command": command,
-                "log": str(log_path),
-                "status": int(rc),
-            },
-            ensure_ascii=True,
-        ),
-        encoding="utf-8",
+def replay_script_path() -> Path:
+    plugin_root = os.environ.get("PLUGIN_ROOT")
+    if plugin_root:
+        return Path(plugin_root) / "scripts" / REPLAY_COMMAND
+    return Path(__file__).resolve().parents[1] / "scripts" / REPLAY_COMMAND
+
+
+def replay_command() -> str:
+    source = replay_script_path()
+    for raw_dir in os.environ.get("PATH", "").split(os.pathsep):
+        if not raw_dir:
+            continue
+        directory = Path(raw_dir)
+        candidate = directory / REPLAY_COMMAND
+        try:
+            if candidate.exists() or candidate.is_symlink():
+                if candidate.resolve() == source.resolve():
+                    return REPLAY_COMMAND
+                return str(source)
+            if directory.is_dir() and os.access(directory, os.W_OK | os.X_OK):
+                candidate.symlink_to(source)
+                return REPLAY_COMMAND
+        except OSError:
+            continue
+    return str(source)
+
+
+def replacement_command(original_command: str, log_path: Path, rc: int) -> str:
+    return " ".join(
+        [
+            shlex.quote(replay_command()),
+            "--",
+            shlex.quote(original_command),
+            shlex.quote(str(log_path)),
+            str(int(rc)),
+        ]
     )
-
-
-def replacement_command(original_command: str) -> str:
-    return f"block -- {shlex.quote(original_command)}"
 
 
 def command_cwd(payload: dict) -> str | None:
@@ -86,7 +105,6 @@ def main() -> int:
     job_id = f"{int(time.time())}-{os.getpid()}"
     log_path = LOG_DIR / f"{job_id}.log"
     rc = run_blocking(command, command_cwd(payload), log_path)
-    write_job(command, log_path, rc)
 
     print(
         json.dumps(
@@ -94,7 +112,9 @@ def main() -> int:
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
                     "permissionDecision": "allow",
-                    "updatedInput": {"command": replacement_command(command)},
+                    "updatedInput": {
+                        "command": replacement_command(command, log_path, rc)
+                    },
                 }
             },
             ensure_ascii=True,

@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""Replay a command result captured by the Blocking Exec hook."""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+
+def usage() -> int:
+    print(
+        "usage: blocking-exec-replay -- <original-command> <log-path> <status>",
+        file=sys.stderr,
+    )
+    return 2
+
+
+def read_status(value: str) -> int:
+    try:
+        return int(value)
+    except ValueError:
+        return 1
+
+
+def main() -> int:
+    if len(sys.argv) != 5 or sys.argv[1] != "--":
+        return usage()
+
+    _, _, _original_command, log_arg, status_arg = sys.argv
+    log_path = Path(log_arg)
+    try:
+        with log_path.open("rb") as log:
+            sys.stdout.buffer.write(log.read())
+    except OSError as exc:
+        print(
+            f"blocking-exec-replay: unable to read captured output: {exc}",
+            file=sys.stderr,
+        )
+        return 127
+
+    return read_status(status_arg)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
