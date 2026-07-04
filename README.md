@@ -1,4 +1,8 @@
-# Codex Blocking Exec
+# Codex Marketplace
+
+This repository is a Codex plugin marketplace.
+
+## Codex Blocking Exec
 
 Codex Blocking Exec ships a Codex `PreToolUse` hook that blocks on every Bash
 command until the command exits.
@@ -20,8 +24,8 @@ gh pr checks 123 --repo owner/repo --watch --interval 60
 Install from GitHub:
 
 ```bash
-codex plugin marketplace add liyishuai/codex-blocking-exec
-codex plugin add codex-blocking-exec@codex-blocking-exec
+codex plugin marketplace add liyishuai/codex-marketplace
+codex plugin add codex-blocking-exec@codex-marketplace
 ```
 
 After installation, open the Codex plugin UI, enable the plugin, and review and

@@ -1,14 +1,14 @@
 {
-  "name": "codex-blocking-exec",
+  "name": "codex-marketplace",
   "interface": {
-    "displayName": "Codex Blocking Exec"
+    "displayName": "Codex Marketplace"
   },
   "plugins": [
     {
       "name": "codex-blocking-exec",
       "source": {
         "source": "url",
-        "url": "https://github.com/liyishuai/codex-blocking-exec.git"
+        "url": "https://github.com/liyishuai/codex-marketplace.git"
       },
       "policy": {
         "installation": "AVAILABLE",
