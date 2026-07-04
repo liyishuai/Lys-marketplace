@@ -36,8 +36,21 @@ def run_blocking(command: str, cwd: str | None, log_path: Path) -> int:
         return proc.wait()
 
 
-def replacement_command(log_path: Path, rc: int) -> str:
-    return f"cat {shlex.quote(str(log_path))}; exit {int(rc)}"
+def replacement_command(original_command: str, log_path: Path, rc: int) -> str:
+    return "\n".join(
+        [
+            "__blocking_exec_replay() {",
+            "  local __blocking_exec_command=$1",
+            "  local __blocking_exec_log=$2",
+            "  local __blocking_exec_status=$3",
+            "  : \"$__blocking_exec_command\"",
+            "  cat \"$__blocking_exec_log\"",
+            "  return \"$__blocking_exec_status\"",
+            "}",
+            "__blocking_exec_replay "
+            f"{shlex.quote(original_command)} {shlex.quote(str(log_path))} {int(rc)}",
+        ]
+    )
 
 
 def command_cwd(payload: dict) -> str | None:
@@ -76,7 +89,9 @@ def main() -> int:
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
                     "permissionDecision": "allow",
-                    "updatedInput": {"command": replacement_command(log_path, rc)},
+                    "updatedInput": {
+                        "command": replacement_command(command, log_path, rc)
+                    },
                 }
             },
             ensure_ascii=True,

@@ -51,6 +51,12 @@ if specific["permissionDecision"] != "allow":
     raise SystemExit(f"unexpected hook decision: {specific!r}")
 
 replacement = specific["updatedInput"]["command"]
+if "__blocking_exec_replay()" not in replacement:
+    raise SystemExit(f"replacement is not a wrapper function: {replacement!r}")
+if "printf blocking-exec; exit 7" not in replacement:
+    raise SystemExit(f"replacement does not include original command: {replacement!r}")
+if replacement.lstrip().startswith("cat "):
+    raise SystemExit(f"replacement regressed to raw cat replay: {replacement!r}")
 final = subprocess.run(
     ["bash", "-lc", replacement],
     stdout=subprocess.PIPE,
@@ -92,6 +98,8 @@ if hook_run.returncode != 0:
 
 result = json.loads(hook_run.stdout)
 replacement = result["hookSpecificOutput"]["updatedInput"]["command"]
+if "__blocking_exec_replay()" not in replacement or "pwd" not in replacement:
+    raise SystemExit(f"cwd replacement lost wrapper/original command: {replacement!r}")
 final = subprocess.run(
     ["bash", "-lc", replacement],
     stdout=subprocess.PIPE,
