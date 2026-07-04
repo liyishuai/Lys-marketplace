@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """PreToolUse hook for blocking all Bash commands until completion.
 
-The hook runs the Bash command synchronously, records full output to /tmp, and
-rewrites the original Bash tool call into a short summary command.
+The hook runs the Bash command synchronously, records combined output to /tmp,
+and rewrites the original Bash tool call to replay that output with the
+command's exit code.
 """
 
 from __future__ import annotations
@@ -17,7 +18,6 @@ from pathlib import Path
 
 
 LOG_DIR = Path(os.environ.get("CODEX_BLOCK_LOG_DIR", "/tmp/codex-blocking-exec"))
-TAIL_BYTES = int(os.environ.get("CODEX_BLOCK_TAIL_BYTES", "12000"))
 
 
 def emit(payload: dict) -> None:
@@ -36,24 +36,8 @@ def allow_rewrite(command: str) -> None:
     )
 
 
-def tail_file(path: Path, limit: int) -> str:
-    with path.open("rb") as fh:
-        try:
-            fh.seek(0, os.SEEK_END)
-            size = fh.tell()
-            fh.seek(max(0, size - limit))
-        except OSError:
-            fh.seek(0)
-        data = fh.read()
-    return data.decode("utf-8", errors="replace")
-
-
 def run_blocking(command: str, cwd: str | None, log_path: Path) -> int:
     with log_path.open("wb") as log:
-        started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        log.write(f"$ {command}\nstarted_at: {started}\n\n".encode())
-        log.flush()
-
         try:
             proc = subprocess.Popen(
                 ["bash", "-lc", command],
@@ -68,8 +52,8 @@ def run_blocking(command: str, cwd: str | None, log_path: Path) -> int:
         return proc.wait()
 
 
-def replacement_command(summary: str, rc: int) -> str:
-    return f"printf '%s\\n' {shlex.quote(summary)}; exit {int(rc)}"
+def replacement_command(log_path: Path, rc: int) -> str:
+    return f"cat {shlex.quote(str(log_path))}; exit {int(rc)}"
 
 
 def main() -> int:
@@ -86,26 +70,9 @@ def main() -> int:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     job_id = f"{int(time.time())}-{os.getpid()}"
     log_path = LOG_DIR / f"{job_id}.log"
-    started_at = time.time()
     rc = run_blocking(command, payload.get("cwd"), log_path)
-    duration_ms = int((time.time() - started_at) * 1000)
-    output_tail = tail_file(log_path, TAIL_BYTES)
 
-    summary = "\n".join(
-        [
-            "[codex-blocking-exec]",
-            f"job_id: {job_id}",
-            f"command: {command}",
-            f"exit_code: {rc}",
-            f"duration_ms: {duration_ms}",
-            f"log: {log_path}",
-            "",
-            "--- output tail ---",
-            output_tail,
-        ]
-    )
-
-    allow_rewrite(replacement_command(summary, rc))
+    allow_rewrite(replacement_command(log_path, rc))
     return 0
 
 

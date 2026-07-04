@@ -16,7 +16,7 @@
   "interface": {
     "displayName": "Codex Blocking Exec",
     "shortDescription": "Block inside a hook for Bash commands.",
-    "longDescription": "Codex Blocking Exec ships a PreToolUse hook that intercepts Bash commands, runs the original command synchronously inside the hook, captures a log, and rewrites the Bash tool call to report the final exit code and output tail.",
+    "longDescription": "Codex Blocking Exec ships a PreToolUse hook that intercepts Bash commands, runs the original command synchronously inside the hook, captures combined output, and rewrites the Bash tool call to replay that output with the final exit code.",
     "developerName": "liyishuai",
     "category": "Productivity",
     "capabilities": [
