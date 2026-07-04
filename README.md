@@ -1,4 +1,4 @@
-# Codex Marketplace
+# Lys Marketplace
 
 This repository is a Codex plugin marketplace. The marketplace catalog lives at
 `.agents/plugins/marketplace.json`, and plugins live under `plugins/`.
@@ -8,8 +8,8 @@ This repository is a Codex plugin marketplace. The marketplace catalog lives at
 Add the marketplace and install the plugin:
 
 ```bash
-codex plugin marketplace add liyishuai/codex-marketplace
-codex plugin add blocking-exec@codex-marketplace
+codex plugin marketplace add liyishuai/Lys-marketplace
+codex plugin add blocking-exec@lys-marketplace
 ```
 
 Then open the Codex plugin UI, enable the plugin, and review and trust its hook
@@ -58,6 +58,6 @@ Test the marketplace install path from a clean Codex home:
 ```bash
 tmp_home=$(mktemp -d)
 HOME="$tmp_home" codex plugin marketplace add "$(pwd)"
-HOME="$tmp_home" codex plugin add blocking-exec@codex-marketplace
+HOME="$tmp_home" codex plugin add blocking-exec@lys-marketplace
 rm -rf "$tmp_home"
 ```
