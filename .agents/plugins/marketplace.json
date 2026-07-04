@@ -1,0 +1,21 @@
+{
+  "name": "codex-blocking-exec",
+  "interface": {
+    "displayName": "Codex Blocking Exec"
+  },
+  "plugins": [
+    {
+      "name": "codex-blocking-exec",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/liyishuai/codex-blocking-exec.git",
+        "ref": "v0.1.0"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -15,6 +15,19 @@ Example:
 gh pr checks 123 --repo owner/repo --watch --interval 60
 ```
 
+## Install
+
+Install the tagged release from GitHub:
+
+```bash
+codex plugin marketplace add liyishuai/codex-blocking-exec --ref v0.1.0
+codex plugin add codex-blocking-exec@codex-blocking-exec
+```
+
+After installation, open the Codex plugin UI, enable the plugin, and review and
+trust its hook definition. Codex does not automatically trust hooks bundled by
+plugins.
+
 ## Notes
 
 - No plugin-specific hook timeout is configured. Codex applies its current
