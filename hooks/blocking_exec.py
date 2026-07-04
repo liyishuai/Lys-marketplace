@@ -20,22 +20,6 @@ from pathlib import Path
 LOG_DIR = Path(os.environ.get("CODEX_BLOCK_LOG_DIR", "/tmp/codex-blocking-exec"))
 
 
-def emit(payload: dict) -> None:
-    print(json.dumps(payload, ensure_ascii=True))
-
-
-def allow_rewrite(command: str) -> None:
-    emit(
-        {
-            "hookSpecificOutput": {
-                "hookEventName": "PreToolUse",
-                "permissionDecision": "allow",
-                "updatedInput": {"command": command},
-            }
-        }
-    )
-
-
 def run_blocking(command: str, cwd: str | None, log_path: Path) -> int:
     with log_path.open("wb") as log:
         try:
@@ -72,7 +56,18 @@ def main() -> int:
     log_path = LOG_DIR / f"{job_id}.log"
     rc = run_blocking(command, payload.get("cwd"), log_path)
 
-    allow_rewrite(replacement_command(log_path, rc))
+    print(
+        json.dumps(
+            {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "allow",
+                    "updatedInput": {"command": replacement_command(log_path, rc)},
+                }
+            },
+            ensure_ascii=True,
+        )
+    )
     return 0
 
 
