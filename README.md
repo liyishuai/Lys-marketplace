@@ -1,7 +1,6 @@
 # Lys Marketplace
 
-This repository is a Codex plugin marketplace. The marketplace catalog lives at
-`.agents/plugins/marketplace.json`, and plugins live under `plugins/`.
+This repository is a Codex plugin marketplace.
 
 ## Install
 
@@ -32,32 +31,3 @@ Notes:
 - No plugin-specific hook timeout is configured; Codex applies its current
   default hook timeout.
 - Commands that rely on interactive stdin are not a good fit for this hook.
-
-## Repository Layout
-
-```text
-.agents/plugins/marketplace.json
-plugins/
-  blocking-exec/
-    .codex-plugin/plugin.json
-    hooks/
-      blocking_exec.py
-      hooks.json
-```
-
-## Development
-
-Check the hook script after changes:
-
-```bash
-python3 -m py_compile plugins/blocking-exec/hooks/blocking_exec.py
-```
-
-Test the marketplace install path from a clean Codex home:
-
-```bash
-tmp_home=$(mktemp -d)
-HOME="$tmp_home" codex plugin marketplace add "$(pwd)"
-HOME="$tmp_home" codex plugin add blocking-exec@lys-marketplace
-rm -rf "$tmp_home"
-```
