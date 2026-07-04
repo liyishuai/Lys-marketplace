@@ -9,8 +9,6 @@ rewrites the Bash tool call to a fast `printf` summary with the real exit code.
 This avoids Codex's command-yield loop for long-running commands because the
 wait happens before the Bash tool starts.
 
-Normal shell syntax is preserved by running the command through `bash -lc`.
-
 Example:
 
 ```bash
@@ -23,8 +21,3 @@ gh pr checks 123 --repo owner/repo --watch --interval 60
   default hook timeout.
 - The hook rewrites every Bash command result into a summary plus output tail.
 - Commands that rely on interactive stdin are not a good fit for this hook.
-- The hook uses `bash -lc`; commands should be valid Bash.
-
-```bash
-make test 2>&1 | tee /tmp/test.log
-```
