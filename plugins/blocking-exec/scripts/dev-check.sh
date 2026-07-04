@@ -20,6 +20,8 @@ import sys
 
 hook = sys.argv[1]
 plugin_root = sys.argv[2]
+test_env = os.environ.copy()
+test_env["PATH"] = f"{plugin_root}/scripts:{test_env.get('PATH', '')}"
 
 payload = {
     "session_id": "dev-check-session",
@@ -51,18 +53,19 @@ if specific["permissionDecision"] != "allow":
     raise SystemExit(f"unexpected hook decision: {specific!r}")
 
 replacement = specific["updatedInput"]["command"]
-if "__blocking_exec_replay()" not in replacement:
-    raise SystemExit(f"replacement is not a wrapper function: {replacement!r}")
+if not replacement.startswith("block -- "):
+    raise SystemExit(f"replacement is not a block command: {replacement!r}")
 if "printf blocking-exec; exit 7" not in replacement:
     raise SystemExit(f"replacement does not include original command: {replacement!r}")
-if replacement.lstrip().startswith("cat "):
-    raise SystemExit(f"replacement regressed to raw cat replay: {replacement!r}")
+if "__blocking_exec_replay" in replacement or replacement.lstrip().startswith("cat "):
+    raise SystemExit(f"replacement regressed to polluted replay: {replacement!r}")
 final = subprocess.run(
     ["bash", "-lc", replacement],
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,
     text=True,
     cwd=plugin_root,
+    env=test_env,
     check=False,
 )
 if final.returncode != 7 or final.stdout != "blocking-exec" or final.stderr:
@@ -98,14 +101,15 @@ if hook_run.returncode != 0:
 
 result = json.loads(hook_run.stdout)
 replacement = result["hookSpecificOutput"]["updatedInput"]["command"]
-if "__blocking_exec_replay()" not in replacement or "pwd" not in replacement:
-    raise SystemExit(f"cwd replacement lost wrapper/original command: {replacement!r}")
+if not replacement.startswith("block -- ") or "pwd" not in replacement:
+    raise SystemExit(f"cwd replacement lost block/original command: {replacement!r}")
 final = subprocess.run(
     ["bash", "-lc", replacement],
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,
     text=True,
     cwd="/",
+    env=test_env,
     check=False,
 )
 if final.returncode != 0 or final.stdout.strip() != plugin_root or final.stderr:

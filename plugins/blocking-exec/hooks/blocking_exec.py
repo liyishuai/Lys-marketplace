@@ -18,6 +18,7 @@ from pathlib import Path
 
 
 LOG_DIR = Path(os.environ.get("BLOCKING_EXEC_LOG_DIR", "/tmp/blocking-exec"))
+JOB_DIR = LOG_DIR / "jobs"
 
 
 def run_blocking(command: str, cwd: str | None, log_path: Path) -> int:
@@ -36,21 +37,24 @@ def run_blocking(command: str, cwd: str | None, log_path: Path) -> int:
         return proc.wait()
 
 
-def replacement_command(original_command: str, log_path: Path, rc: int) -> str:
-    return "\n".join(
-        [
-            "__blocking_exec_replay() {",
-            "  local __blocking_exec_command=$1",
-            "  local __blocking_exec_log=$2",
-            "  local __blocking_exec_status=$3",
-            "  : \"$__blocking_exec_command\"",
-            "  cat \"$__blocking_exec_log\"",
-            "  return \"$__blocking_exec_status\"",
-            "}",
-            "__blocking_exec_replay "
-            f"{shlex.quote(original_command)} {shlex.quote(str(log_path))} {int(rc)}",
-        ]
+def write_job(command: str, log_path: Path, rc: int) -> None:
+    JOB_DIR.mkdir(parents=True, exist_ok=True)
+    job_path = JOB_DIR / f"{log_path.stem}.json"
+    job_path.write_text(
+        json.dumps(
+            {
+                "command": command,
+                "log": str(log_path),
+                "status": int(rc),
+            },
+            ensure_ascii=True,
+        ),
+        encoding="utf-8",
     )
+
+
+def replacement_command(original_command: str) -> str:
+    return f"block -- {shlex.quote(original_command)}"
 
 
 def command_cwd(payload: dict) -> str | None:
@@ -82,6 +86,7 @@ def main() -> int:
     job_id = f"{int(time.time())}-{os.getpid()}"
     log_path = LOG_DIR / f"{job_id}.log"
     rc = run_blocking(command, command_cwd(payload), log_path)
+    write_job(command, log_path, rc)
 
     print(
         json.dumps(
@@ -89,9 +94,7 @@ def main() -> int:
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
                     "permissionDecision": "allow",
-                    "updatedInput": {
-                        "command": replacement_command(command, log_path, rc)
-                    },
+                    "updatedInput": {"command": replacement_command(command)},
                 }
             },
             ensure_ascii=True,
