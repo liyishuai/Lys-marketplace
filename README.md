@@ -28,6 +28,5 @@ would otherwise wake the model repeatedly while the process is still running.
 
 Notes:
 
-- No plugin-specific hook timeout is configured; Codex applies its current
-  default hook timeout.
+- The hook timeout is 20 minutes.
 - Commands that rely on interactive stdin are not a good fit for this hook.

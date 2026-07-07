@@ -7,6 +7,7 @@
           {
             "type": "command",
             "command": "python3 \"$PLUGIN_ROOT/hooks/blocking_exec.py\"",
+            "timeout": 1200,
             "statusMessage": "Running Bash command to completion"
           }
         ]
